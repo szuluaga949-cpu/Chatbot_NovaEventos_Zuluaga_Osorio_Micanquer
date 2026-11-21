@@ -9,6 +9,9 @@ __pycache__/
 # Variables de entorno y claves reales
 .env
 
+# Base de datos SQLite (se genera automáticamente al iniciar main.py)
+reservas.db
+
 # Archivos temporales de sistema e IDE
 .DS_Store
 Thumbs.db

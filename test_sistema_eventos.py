@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 import almacen_sqlite
 import main
 import consulta_llm
+import chatbot_memoria
+import api_telegram
 
 
 def configurar_entorno_pruebas():
@@ -94,3 +96,35 @@ def test_3_rechazo_intervalos_ocupados_y_cancelacion():
         },
     )
     assert exito.status_code == 201
+
+
+def test_4_memoria_propiedad_reservas():
+    """Valida la asignación y verificación de propiedad de reservas por usuario."""
+    chatbot_memoria.registrar_reserva_usuario("user_A", "NOVA-1004")
+    assert chatbot_memoria.es_propietario("user_A", "NOVA-1004") is True
+    assert chatbot_memoria.es_propietario("user_B", "NOVA-1004") is False
+    assert "NOVA-1004" in chatbot_memoria.obtener_reservas_usuario("user_A")
+
+
+def test_5_api_telegram_comandos_basicos():
+    """Valida comandos informativos de Telegram."""
+    _, _ = configurar_entorno_pruebas()
+    resp_start = api_telegram.comando_start(12345)
+    assert "Bienvenido" in resp_start
+
+    resp_ayuda = api_telegram.comando_ayuda(12345)
+    assert "Ayuda" in resp_ayuda
+
+    resp_todas = api_telegram.comando_todas(12345)
+    assert "NOVA-1001" in resp_todas
+
+
+def test_6_api_telegram_control_acceso_cancelacion():
+    """Valida que un usuario no pueda cancelar la reserva de otro usuario."""
+    _, _ = configurar_entorno_pruebas()
+    # Usuario A (chat_id: 111) crea NOVA-1001 (simulado)
+    chatbot_memoria.registrar_reserva_usuario("tg_111", "NOVA-1001")
+
+    # Usuario B (chat_id: 222) intenta cancelar NOVA-1001
+    resp_cancel = api_telegram.comando_cancelar(222, "NOVA-1001")
+    assert "denegado" in resp_cancel.lower()
